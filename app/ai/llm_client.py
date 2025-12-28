@@ -94,7 +94,7 @@ class LLMClient:
         - **禁止使用**：h1-h6, ul, ol, li, div, span（除非必要）。
         请以JSON格式返回，包含以下字段：
         - title: 文章标题
-        - digest: 文章摘要(50-100字)
+        - digest: 文章摘要(50-100字，禁止超过100字)
         - content: 文章HTML内容（必须使用内联样式，可包含<figure1>到<figure5>占位符）
         - cover_prompt: 封面图生成提示词（30字以内，描述视觉场景，不含文字和图表）
         - figure_prompt_list: 插图提示词数组（每个元素30字以内，描述视觉场景，不含文字和图表，数量与content中的占位符数量一致，可为空数组）

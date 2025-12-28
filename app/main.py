@@ -3,10 +3,11 @@ AI公众号自动托管系统 - FastAPI入口
 """
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pathlib import Path
+from pydantic import BaseModel
 
 from .config import ensure_dirs, get_config
 from .api import news_router, articles_router, wechat_router, config_router
@@ -15,6 +16,16 @@ from .scrapers import AIBaseScraper
 from .ai import LLMClient, ImageGenerator
 from .wechat import DraftManager
 from .models.article import ArticleStatus
+from .auth import (
+    is_authenticated, verify_credentials, set_auth_cookie, 
+    clear_auth_cookie, require_auth, is_auth_enabled
+)
+
+
+class LoginRequest(BaseModel):
+    """登录请求"""
+    username: str
+    password: str
 
 
 @asynccontextmanager
@@ -62,18 +73,68 @@ if STATIC_DIR.exists():
 
 
 @app.get("/")
-async def index():
-    """首页"""
+async def index(request: Request):
+    """首页 - 需要认证"""
+    redirect = require_auth(request)
+    if redirect:
+        return redirect
+    
     index_file = STATIC_DIR / "index.html"
     if index_file.exists():
         return FileResponse(index_file)
     return {"message": "AI公众号自动托管系统", "docs": "/docs"}
 
 
+@app.get("/login")
+async def login_page(request: Request):
+    """登录页"""
+    # 如果已认证，重定向到首页
+    if is_authenticated(request):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/", status_code=302)
+    
+    login_file = STATIC_DIR / "login.html"
+    if login_file.exists():
+        return FileResponse(login_file)
+    return {"message": "Login page not found"}
+
+
+@app.post("/api/auth/login")
+async def api_login(request: Request, login_data: LoginRequest):
+    """登录API"""
+    if verify_credentials(login_data.username, login_data.password):
+        response = JSONResponse(content={"success": True, "message": "登录成功"})
+        set_auth_cookie(response)
+        return response
+    return JSONResponse(
+        status_code=401,
+        content={"success": False, "detail": "用户名或密码错误"}
+    )
+
+
+@app.post("/api/auth/logout")
+async def api_logout():
+    """登出API"""
+    response = JSONResponse(content={"success": True, "message": "已登出"})
+    clear_auth_cookie(response)
+    return response
+
+
+@app.get("/api/auth/status")
+async def auth_status(request: Request):
+    """检查认证状态"""
+    return {
+        "authenticated": is_authenticated(request),
+        "auth_enabled": is_auth_enabled()
+    }
+
+
 @app.get("/health")
 async def health_check():
     """健康检查"""
     return {"status": "healthy"}
+
+
 
 
 # 定时任务函数

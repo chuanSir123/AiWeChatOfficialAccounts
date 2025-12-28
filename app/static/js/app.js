@@ -863,3 +863,18 @@ function getStatusText(status) {
     };
     return statusMap[status] || status;
 }
+
+// ===== 认证相关 =====
+async function logout() {
+    try {
+        const response = await fetch('/api/auth/logout', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            window.location.href = '/login';
+        }
+    } catch (error) {
+        console.error('登出失败:', error);
+        // 即使登出API失败，也跳转到登录页
+        window.location.href = '/login';
+    }
+}
