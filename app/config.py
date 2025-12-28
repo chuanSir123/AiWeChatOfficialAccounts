@@ -19,7 +19,7 @@ class WeChatConfig(BaseModel):
 class LLMConfig(BaseModel):
     """LLM配置 (OpenAI格式)"""
     api_base: str = "https://huang123chuan-antigravity-api.hf.space/v1"
-    api_key: str = "sk-qq416448943"
+    api_key: str = "sk-"
     model: str = "gemini-3-flash"
     temperature: float = 0.7
     max_tokens: int = 4096
@@ -27,7 +27,7 @@ class LLMConfig(BaseModel):
 
 class ImageConfig(BaseModel):
     """图片生成配置"""
-    api_url: str = "https://chuansir-qwen-image.ms.show/image"
+    api_url: str = ""
     default_prompt_prefix: str = "公众号封面图，"
 
 
