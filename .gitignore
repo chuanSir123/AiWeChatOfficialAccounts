@@ -1,0 +1,23 @@
+# Configuration file (configured via web interface)
+config.yaml
+
+# Python virtual environment
+venv/
+
+# Data directory
+data/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

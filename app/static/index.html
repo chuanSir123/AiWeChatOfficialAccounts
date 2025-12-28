@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI公众号自动托管系统</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">🤖</span>
+                <span class="logo-text">AI公众号</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-page="news">
+                    <span class="nav-icon">📰</span>
+                    <span>新闻抓取</span>
+                </a>
+                <a href="#" class="nav-item" data-page="articles">
+                    <span class="nav-icon">📝</span>
+                    <span>文章管理</span>
+                </a>
+                <a href="#" class="nav-item" data-page="drafts">
+                    <span class="nav-icon">📱</span>
+                    <span>草稿管理</span>
+                </a>
+                <a href="#" class="nav-item" data-page="config">
+                    <span class="nav-icon">⚙️</span>
+                    <span>系统配置</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="wechat-status" id="wechatStatus">
+                    <span class="status-dot offline"></span>
+                    <span>未绑定公众号</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 新闻抓取页 -->
+            <section class="page active" id="page-news">
+                <div class="page-header">
+                    <h1>AI热点新闻抓取</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="scrapeNews('aibase')">
+                            <span>🔍</span> AIBase抓取
+                        </button>
+                        <button class="btn btn-secondary" onclick="scrapeNews('aibot')">
+                            <span>🔍</span> AI-Bot抓取
+                        </button>
+                        <button class="btn btn-accent" onclick="scrapeNews('all')">
+                            <span>🔄</span> 全部抓取
+                        </button>
+                    </div>
+                </div>
+                <div class="content-area">
+                    <div class="news-list" id="newsList">
+                        <div class="empty-state">
+                            <span class="empty-icon">📭</span>
+                            <p>暂无新闻，点击上方按钮抓取</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-footer">
+                    <button class="btn btn-outline" id="selectAllBtn" onclick="toggleSelectAll()">
+                        <span>☑️</span> 全选
+                    </button>
+                    <button class="btn btn-primary" id="generateArticleBtn" disabled onclick="generateArticle()">
+                        <span>✨</span> 根据选中新闻生成文章
+                    </button>
+                    <span class="selected-count">已选择 <strong id="selectedCount">0</strong> 条新闻</span>
+                </div>
+            </section>
+
+            <!-- 文章管理页 -->
+            <section class="page" id="page-articles">
+                <div class="page-header">
+                    <h1>文章管理</h1>
+                    <button class="btn btn-secondary" onclick="loadArticles()">
+                        <span>🔄</span> 刷新列表
+                    </button>
+                </div>
+                <div class="content-area">
+                    <div class="article-list" id="articleList">
+                        <div class="empty-state">
+                            <span class="empty-icon">📄</span>
+                            <p>暂无文章，请先抓取新闻并生成</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 草稿管理页 -->
+            <section class="page" id="page-drafts">
+                <div class="page-header">
+                    <h1>微信草稿管理</h1>
+                    <button class="btn btn-secondary" onclick="loadDrafts()">
+                        <span>🔄</span> 刷新草稿
+                    </button>
+                </div>
+                <div class="content-area">
+                    <div class="draft-list" id="draftList">
+                        <div class="empty-state">
+                            <span class="empty-icon">📋</span>
+                            <p>请先绑定公众号后查看草稿</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 系统配置页 -->
+            <section class="page" id="page-config">
+                <div class="page-header">
+                    <h1>系统配置</h1>
+                </div>
+                <div class="content-area">
+                    <div class="config-section">
+                        <h2>🔗 微信公众号绑定</h2>
+                        <div id="wechatBoundInfo"
+                            style="display:none; padding: 12px; background: #e8f5e9; border-radius: 8px; margin-bottom: 16px;">
+                            <span style="color: #2e7d32;">✅ 已绑定公众号：<strong id="boundAccountName"></strong></span>
+                        </div>
+                        <div class="form-group">
+                            <label>公众号名称 <span style="color:#888;font-size:12px;">(将作为文章作者名)</span></label>
+                            <input type="text" id="configAccountName" placeholder="请输入公众号名称">
+                        </div>
+                        <div class="form-group">
+                            <label>AppID</label>
+                            <input type="text" id="configAppId" placeholder="请输入公众号AppID">
+                        </div>
+                        <div class="form-group">
+                            <label>AppSecret</label>
+                            <input type="password" id="configAppSecret" placeholder="请输入公众号AppSecret">
+                        </div>
+                        <button class="btn btn-primary" onclick="bindWechat()">绑定公众号</button>
+                    </div>
+
+                    <div class="config-section">
+                        <h2>🤖 LLM配置</h2>
+                        <div class="form-group">
+                            <label>API地址</label>
+                            <input type="text" id="configLlmBase" placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-group">
+                            <label>API密钥</label>
+                            <input type="password" id="configLlmKey" placeholder="sk-xxx">
+                        </div>
+                        <div class="form-group">
+                            <label>模型名称</label>
+                            <input type="text" id="configLlmModel" placeholder="gpt-4o">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>温度</label>
+                                <input type="number" id="configLlmTemp" step="0.1" min="0" max="2" value="0.7">
+                            </div>
+                            <div class="form-group">
+                                <label>最大Token</label>
+                                <input type="number" id="configLlmTokens" value="4096">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h2>🖼️ 图片生成配置</h2>
+                        <div class="form-group">
+                            <label>API地址</label>
+                            <input type="text" id="configImageUrl" placeholder="图片生成API地址">
+                        </div>
+                        <div class="form-group">
+                            <label>提示词前缀</label>
+                            <input type="text" id="configImagePrefix" placeholder="公众号封面图，">
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h2>⏰ 定时任务配置</h2>
+                        <p style="color: #666; font-size: 14px; margin-bottom: 16px;">
+                            自动化流程：抓取新闻 → 全选生成文章 → 生成图片 → 上传草稿
+                        </p>
+                        <div class="form-group">
+                            <label>执行时间 (Cron表达式)</label>
+                            <input type="text" id="configAutoCron" placeholder="0 8 * * *">
+                            <small style="color: #888; display: block; margin-top: 4px;">
+                                例如: "0 8 * * *" 表示每天早上8点执行
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="configSchedulerEnabled">
+                                <span>启用定时任务</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="config-actions">
+                        <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+                        <button class="btn btn-secondary" onclick="loadConfig()">重置</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 文章预览弹窗 -->
+    <div class="modal" id="articleModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <input type="text" class="modal-title-input" id="modalArticleTitle" placeholder="文章标题">
+                <button class="modal-close" onclick="closeModal('articleModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="article-preview">
+                    <div class="article-meta">
+                        <span>作者: <span id="modalArticleAuthor"></span></span>
+                        <span>状态: <span id="modalArticleStatus"></span></span>
+                    </div>
+                    <div class="article-cover" id="modalArticleCover"></div>
+                    <div class="form-group">
+                        <label>文章摘要</label>
+                        <textarea class="article-digest-input" id="modalArticleDigest" placeholder="文章摘要"
+                            rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>文章内容</label>
+                        <div class="article-content" id="modalArticleContent" contenteditable="true"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="regenerateArticle()">🔄 重新生成</button>
+                <button class="btn btn-secondary" onclick="saveArticleEdit()">💾 保存修改</button>
+                <button class="btn btn-primary" id="draftActionBtn" onclick="handleDraftAction()">上传草稿</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片重新生成弹窗 -->
+    <div class="modal" id="imageRegenerateModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 style="margin: 0; font-size: 16px;">🖼️ 重新生成图片</h3>
+                <button class="modal-close" onclick="closeModal('imageRegenerateModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>图片提示词</label>
+                    <textarea id="imagePromptInput" rows="3"
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"
+                        placeholder="描述你想要生成的图片..."></textarea>
+                </div>
+                <p style="font-size: 12px; color: #888; margin-top: 8px;">
+                    提示：描述具体的视觉场景，避免包含文字、图表、架构图等内容
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('imageRegenerateModal')">取消</button>
+                <button class="btn btn-primary" onclick="confirmRegenerateImage()">🔄 重新生成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading遮罩 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p id="loadingText">加载中...</p>
+    </div>
+
+    <!-- Toast提示 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+
+</html>
